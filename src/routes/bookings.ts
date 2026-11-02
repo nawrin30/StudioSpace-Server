@@ -42,7 +42,7 @@ router.post("/", protect, async (req: AuthRequest, res) => {
     if (studio.ownerEmail === req.user!.email) {
       res.status(400).json({ message: "You cannot book your own studio." }); return;
     }
-    // Pending requests do not block slots; only confirmed bookings reserve time.
+   
     const confirmed = await Booking.find({ studio: studioId, date, status: "Confirmed" });
     const collision = confirmed.some((item) => start < toMinutes(item.endTime) && end > toMinutes(item.startTime));
     if (collision) { res.status(409).json({ message: "This slot overlaps a confirmed booking. Choose another time." }); return; }
