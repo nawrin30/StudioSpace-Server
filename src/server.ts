@@ -1,3 +1,4 @@
+
 import "dotenv/config";
 import dns from "node:dns";
 
@@ -20,17 +21,6 @@ import { connectDB } from "./config/db";
 
 const app = express();
 
-app.use(async (_req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (error) {
-    console.error("Database connection failed:", error);
-    res.status(500).json({ message: "Database connection failed." });
-  }
-});
-
-// Allowed origins configured with fallback for Vercel production URLs
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
@@ -42,11 +32,10 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl) or if origin matches allowed list
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(null, true); // Permissive callback to avoid strict CORS block in deployment
+        callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
@@ -59,13 +48,22 @@ app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 
+app.use(async (_req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database connection failed:", error);
+    res.status(500).json({ message: "Database connection failed." });
+  }
+});
+
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", service: "StudioSpace API" });
 });
 
-// Auth Routes
 app.use("/api/auth", authRoutes);
-app.use("/auth", authRoutes); // Fallback if client calls without /api prefix
+app.use("/auth", authRoutes);
 
 app.use("/api/studios", studioRoutes);
 app.use("/api/bookings", bookingRoutes);
